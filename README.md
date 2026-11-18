@@ -1,3 +1,14 @@
+## System Architecture
+
+```mermaid
+flowchart TD
+    A[Heterogeneous Data Sources] --> B[Data Validation]
+    B --> C[Change Data Capture CDC]
+    C --> D[Incremental ETL Pipeline]
+    D --> E[Staging Database]
+    E --> F[Banking Data Warehouse]
+    F --> G[Analytics Dashboard]
+    F --> H[Reports]
 # Banking CDC-Based Incremental ETL Data Warehouse
 
 ## Project Overview
