@@ -1,0 +1,4 @@
+customer_id,first_name,last_name,email,phone,segment,kyc_status,risk_score,city,state,country
+CUST90001,Alexander,Hamilton,a.hamilton@treasury.gov,+1-212-555-0199,HNW,Verified,15,New York,NY,United States
+CUST90002,Eleanor,Vance,e.vance@techcorp.io,+1-415-555-0144,Corporate,Verified,22,San Francisco,CA,United States
+CUST90003,Marcus,Sterling,m.sterling@retailnet.com,+1-312-555-0188,SME,Pending Review,45,Chicago,IL,United States

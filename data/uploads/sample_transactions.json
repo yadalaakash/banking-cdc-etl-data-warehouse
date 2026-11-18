@@ -1,0 +1,38 @@
+[
+  {
+    "transaction_id": "TXN_EXT_7001",
+    "account_id": "ACC000001",
+    "customer_id": "CUST00001",
+    "branch_id": "BR001",
+    "transaction_type": "Deposit",
+    "channel": "Mobile Banking",
+    "amount": 3500.0,
+    "balance_after": 28500.0,
+    "is_credit": true,
+    "is_debit": false
+  },
+  {
+    "transaction_id": "TXN_EXT_7002",
+    "account_id": "ACC000002",
+    "customer_id": "CUST00002",
+    "branch_id": "BR002",
+    "transaction_type": "Transfer",
+    "channel": "Wire",
+    "amount": 12500.0,
+    "balance_after": 45200.0,
+    "is_credit": false,
+    "is_debit": true
+  },
+  {
+    "transaction_id": "TXN_EXT_7003",
+    "account_id": "ACC000003",
+    "customer_id": "CUST00003",
+    "branch_id": "BR003",
+    "transaction_type": "Card Payment",
+    "channel": "Online Banking",
+    "amount": 189.5,
+    "balance_after": 5120.5,
+    "is_credit": false,
+    "is_debit": true
+  }
+]
