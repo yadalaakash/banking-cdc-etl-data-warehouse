@@ -1,278 +1,195 @@
-# ETL/ELT Pipeline Optimization for Heterogeneous Sources via Change Data Capture (CDC) Based Incremental ETL
+# Banking CDC-Based Incremental ETL Data Warehouse
 
-### Applied to Banking Customer Transaction Warehousing Systems
+## Project Overview
 
-[![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.163.2-009688.svg)](https://fastapi.tiangolo.com/)
-[![React 19](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38B2AC.svg)](https://tailwindcss.com/)
-[![PostgreSQL Compatible](https://img.shields.io/badge/PostgreSQL-Ready-336791.svg)](https://www.postgresql.org/)
-[![Kimball Star Schema](https://img.shields.io/badge/Data%20Warehouse-Kimball%20Star%20Schema-purple.svg)]()
-[![CDC Engine](https://img.shields.io/badge/CDC-Idempotent%20SHA256-orange.svg)]()
+**Project Title:** ETL/ELT Pipeline Optimization for Heterogeneous
+Sources via Change Data Capture (CDC) Based Incremental ETL, Applied to
+Banking Customer Transaction Warehousing Systems
 
----
+**Domain:** Data Engineering & Pipelines; Data Mining & Warehousing
 
-## 1. Project Overview & Problem Statement
+This project focuses on a banking customer transaction data warehousing
+workflow. It is intended to bring data from heterogeneous sources into a
+centralized warehouse and demonstrate how Change Data Capture (CDC) can
+identify data changes so incremental ETL processes can process changed
+records.
 
-In modern financial ecosystems, banking institutions process millions of daily transactions across disparate, heterogeneous infrastructure:
-- **Core Banking Relational OLTP Databases** (PostgreSQL / Oracle)
-- **ATM Networks** (Scheduled CSV batch extracts)
-- **Mobile & Digital Banking Platforms** (High-velocity JSON REST API events)
-- **External Loan & Credit Partners** (Periodic Excel `.xlsx` / `.xls` spreadsheets)
+> Update this README to match the exact modules and source connectors
+> implemented in your final project. Use synthetic banking data only. Do
+> not publish real customer records, credentials, or secrets.
 
-Traditional enterprise data warehouses rely on scheduled batch **Full Reload ETL Pipelines**. In high-volume banking environments, this approach introduces critical bottlenecks:
-1. **Excessive Resource & I/O Footprint:** Full table scans over millions of historical transactions require massive storage I/O and network bandwidth.
-2. **Batch Window Depletion:** As data volume grows ($\mathcal{O}(N)$), nightly ETL jobs exceed the allotted batch window.
-3. **Operational Database Lock Contention:** Table scans place shared locks on active OLTP database tables, impacting customer-facing services.
-4. **Data Latency (T+1):** Analytics and fraud models run on stale data from the previous night rather than real-time streams.
+## Problem Statement
 
-### The Solution:
-This project engineers a high-performance **Change Data Capture (CDC) based Incremental ETL/ELT Pipeline**. By capturing row-level mutations (`INSERT`, `UPDATE`, `DELETE`) as they happen, validating cryptographic SHA-256 checksums for idempotency, harmonizing heterogeneous schemas via transient staging, and applying **Slowly Changing Dimensions (SCD Type 2)**, the system achieves an **over 98% reduction in pipeline latency** and a **51x throughput speedup** over traditional full reloads.
+Banking data may come from multiple sources and formats. Repeatedly
+extracting and processing all records can increase processing time and
+resource usage. A CDC-based incremental ETL approach identifies
+inserted, updated, and deleted records and processes the changes
+required for the warehouse.
 
----
+## Objectives
 
-## 2. Technology Stack
+-   Work with heterogeneous banking data sources and formats.
+-   Validate and prepare source data before loading.
+-   Capture data changes such as inserts, updates, and deletes.
+-   Process changed records through an incremental ETL workflow.
+-   Organize customer and transaction information for analytical
+    queries.
+-   Monitor pipeline execution and compare full-load and
+    incremental-load performance.
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend Dashboard** | React 19, Vite 8, Tailwind CSS, Chart.js, Lucide Icons |
-| **Backend REST API** | Python 3.13, FastAPI, Uvicorn, Pydantic, Python-Multipart |
-| **Data Processing & ETL** | Python, Pandas, SQLAlchemy 2.0, NumPy, OpenPyXL |
-| **CDC Engine** | Dual Mode: PostgreSQL Logical Replication / WAL Triggers & Audit Log Simulation |
-| **Data Warehouse** | Dual Mode: Enterprise PostgreSQL Ready & Embedded SQLite WAL High-Performance Engine |
-| **Dimensional Modeling** | Ralph Kimball Star Schema (`Fact_Transactions`, `Dim_Customer` SCD2, `Dim_Account`, `Dim_Branch`, `Dim_Date`) |
+## High-Level Workflow
 
----
-
-## 3. High-Level System Architecture
-
-```
-+-----------------------------------------------------------------------------------+
-|                           HETEROGENEOUS SOURCE LAYER                             |
-|  [Core Banking OLTP]      [ATM Terminal]      [Mobile API]      [Credit Partner]  |
-|   (PostgreSQL/SQL)             (CSV)             (JSON)             (Excel)       |
-+-----------------------------------------------------------------------------------+
-                                          │
-                                          ▼
-+-----------------------------------------------------------------------------------+
-|               CHANGE DATA CAPTURE (CDC) & IDEMPOTENCY ENGINE                      |
-|  - Real-time Mutation Detection: INSERT, UPDATE, DELETE                           |
-|  - Cryptographic Checksum Generation: SHA256(table : id : op : payload)           |
-|  - Audit Log Storage: cdc_change_log (Old Data JSON vs New Data JSON pre/post)     |
-|  - High-Water Mark Timestamp Tracker: pipeline_watermarks                         |
-+-----------------------------------------------------------------------------------+
-                                          │
-                                          ▼
-+-----------------------------------------------------------------------------------+
-|                     INCREMENTAL ETL / ELT PIPELINE ENGINE                         |
-|  - Schema Harmonization & Validation (stg_customers, stg_transactions)           |
-|  - SCD Type 2 Dimension Versioning: Version N+1, is_current, scd_end_date         |
-|  - Dynamic Dim_Date & Dim_Branch Surrogate Key Resolution                         |
-|  - Statistical Anomaly & Fraud Scoring (Z-score outlier detection)                |
-+-----------------------------------------------------------------------------------+
-                                          │
-                                          ▼
-+-----------------------------------------------------------------------------------+
-|                     KIMBALL STAR SCHEMA DATA WAREHOUSE                            |
-|             +-----------------------------------------------+                     |
-|             |               DIM_CUSTOMER (SCD2)             |                     |
-|             +-----------------------+-----------------------+                     |
-|                                     │                                             |
-|   +-------------------+             ▼             +--------------------+          |
-|   |    DIM_ACCOUNT    |-----> FACT_TRANSACTIONS <-----|     DIM_BRANCH     |          |
-|   +-------------------+             ▲             +--------------------+          |
-|                                     │                                             |
-|             +-----------------------+-----------------------+                     |
-|             |                   DIM_DATE                    |                     |
-|             +-----------------------------------------------+                     |
-+-----------------------------------------------------------------------------------+
-                                          │
-                                          ▼
-+-----------------------------------------------------------------------------------+
-|                       ANALYTICS, MINING & DASHBOARDS                              |
-|  - Customer RFM Segmentation & Risk Distribution                                  |
-|  - Monthly Flow & Credit vs. Debit Liquidity Ratio                                |
-|  - Statistical Anomaly & Fraud Detection Engine                                   |
-|  - Benchmark Execution & Optimization Proof (98%+ Latency Reduction)              |
-|  - Compliance Audit Reports with CSV & Excel Exports                              |
-+-----------------------------------------------------------------------------------+
+``` text
+Heterogeneous Data Sources
+          |
+          v
+   Source Data Validation
+          |
+          v
+ Change Data Capture (CDC)
+          |
+          v
+ Incremental ETL / ELT
+          |
+          v
+ Staging and Data Warehouse
+          |
+          v
+ Banking Analytics and Reports
 ```
 
----
+## Technology Stack
 
-## 4. Project Directory Structure
+The setup process for this repository confirmed:
 
-```
-major project/
-├── backend/
-│   └── app/
-│       ├── __init__.py
-│       ├── config.py                 # Paths, environment configs, DB connection URLs
-│       ├── database.py               # SQLAlchemy engine, session maker, WAL pragmas
-│       ├── models.py                 # Star Schema models (Staging, Dims, Facts, CDC log, Runs)
-│       ├── cdc_engine.py             # CDC change detection, SHA256 idempotency, mutation simulator
-│       ├── etl_pipeline.py           # Incremental ETL, Full ETL, SCD Type 2, heterogeneous ingestion
-│       ├── optimizer.py              # Automated benchmark runner (Full vs Incremental comparison)
-│       ├── analytics.py              # Customer segmentation, credit/debit ratio, anomaly detection
-│       ├── generator.py              # Realistic synthetic data generator (>1k cust, >5k txns)
-│       ├── main.py                   # FastAPI application, CORS, lifecycle hooks
-│       └── routes/
-│           ├── dashboard.py          # Summary KPIs, trend charts, system health
-│           ├── sources.py            # Heterogeneous source management, CSV/JSON/Excel upload
-│           ├── cdc.py                # CDC change stream, mutation injector, metrics
-│           ├── pipeline.py           # Incremental/Full ETL triggers, benchmark runner, audit runs
-│           ├── warehouse.py          # Star Schema explorer, metadata, safe SELECT query console
-│           ├── analytics.py          # Segmentation, liquidity, anomalies, top customers
-│           └── reports.py            # Report generation and streaming CSV/Excel export
-├── data/
-│   ├── raw/                          # Ready-to-use sample CSV, JSON, and Excel test files
-│   ├── uploads/                      # Uploaded heterogeneous batch files
-│   └── cdc_batches/                  # CDC batch export snapshots
-├── database/
-│   ├── schema_postgres.sql           # Complete PostgreSQL DDL (Staging, Star Schema, CDC)
-│   └── postgres_cdc_setup.sql        # Trigger-based CDC function & WAL logical replication guide
-├── docs/
-│   ├── ARCHITECTURE_AND_DATA_FLOW.md # High-level architecture & Mermaid diagrams
-│   ├── CDC_WORKFLOW_AND_OPTIMIZATION.md # CDC lifecycle, idempotency proof, mathematical model
-│   └── VIVA_PRESENTATION_GUIDE.md    # Viva voce questions, defense speech, demonstration script
-├── frontend/                         # Modern React 19 + Vite 8 + Tailwind CSS Dashboard
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Header.jsx            # Quick actions (Run Incremental, Simulate CDC, Refresh)
-│   │   │   └── Sidebar.jsx           # Core module navigation and system status indicator
-│   │   ├── views/
-│   │   │   ├── DashboardView.jsx     # Executive KPI cards, monthly trends, credit/debit doughnut
-│   │   │   ├── DataSourcesView.jsx   # Source statuses, drag & drop uploader, sample downloads
-│   │   │   ├── CDCMonitorView.jsx    # Live CDC mutation stream, payload diff inspector, simulator
-│   │   │   ├── PipelineView.jsx      # Scientific benchmark comparison, time saved %, run history
-│   │   │   ├── WarehouseView.jsx     # Star Schema topology, table preview, interactive SQL console
-│   │   │   ├── AnalyticsView.jsx     # Segmentation tiers, risk scoring, anomaly detection cards
-│   │   │   ├── ReportsView.jsx       # Transaction ledgers, customer reports, CSV/Excel export
-│   │   │   └── ArchitectureDocView.jsx # In-app architectural documentation and viva guide
-│   │   ├── services/api.js           # REST API client connecting frontend to backend
-│   │   ├── utils/chartSetup.js       # Chart.js registration
-│   │   ├── App.jsx                   # Main layout and global notification coordinator
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
-├── run_backend.py                    # Server startup script (FastAPI on http://localhost:8000)
-├── run_pipeline_cli.py               # Data engineering CLI utility tool
-├── requirements.txt                  # Python dependencies
-├── .env.example                      # Environment variables template
-├── .env                              # Active configuration
-└── README.md                         # Project documentation
-```
+-   **Backend:** Python with FastAPI/Uvicorn
+-   **Frontend:** React with Vite
+-   **Database:** A SQLite database file named `banking_dw.db` was
+    present in the project folder.
 
----
+Confirm the exact data-processing libraries in `requirements.txt`. Add
+other tools only if they are actually configured and used in your
+implementation.
 
-## 5. Step-by-Step Installation & Execution Guide
+## Project Structure
+
+  Folder/File          Purpose
+  -------------------- -----------------------------------
+  `backend/`           Backend application code
+  `frontend/`          Web frontend application
+  `data/`              Project datasets or sample data
+  `database/`          Database-related files or scripts
+  `docs/`              Project documentation
+  `run_backend.py`     Backend startup script
+  `run_pipeline.py`    Pipeline execution script
+  `requirements.txt`   Python dependencies
+
+## Local Setup and Execution
 
 ### Prerequisites
-- Python 3.10+ (Tested on Python 3.13)
-- Node.js 18+ (Tested on Node.js v24)
-- (Optional) PostgreSQL 14+ if deploying against a remote or local PostgreSQL server
 
-### Step 1: Install Python Dependencies
-```bash
+-   Python
+-   Node.js and npm
+-   Git (optional, for version control)
+
+### 1. Clone the repository
+
+``` bash
+git clone https://github.com/yadalaakash/banking-cdc-etl-data-warehouse.git
+cd banking-cdc-etl-data-warehouse
+```
+
+### 2. Create and activate a Python virtual environment
+
+**Windows CMD:**
+
+``` cmd
+python -m venv venv
+venv\Scripts\activate
+```
+
+### 3. Install Python dependencies
+
+``` cmd
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Step 2: Install Frontend Dependencies
-```bash
-cd frontend
-npm install
-cd ..
-```
+### 4. Start the backend
 
-### Step 3: Seed Synthetic Banking Data (CLI or Auto-Startup)
-The database automatically seeds realistic banking data on first startup. You can also run the CLI tool directly:
-```bash
-python run_pipeline_cli.py --action seed --customers 1000 --transactions 5000
-```
-This generates:
-- **1,000 Banking Customers** with diverse demographics, KYC statuses, risk scores, and cities.
-- **15 Branches** (New York, San Francisco, Chicago, London, Dallas, etc.).
-- **1,423 Accounts** (Savings, Checking, Fixed Deposit, Loan, Credit Card).
-- **5,000 Historical Transactions** with realistic distributions across channels.
-- **50+ Pre-staged CDC Events** (Inserts, Updates, Deletes) ready for live demonstration.
+From the project root, with the virtual environment activated:
 
----
-
-### Step 4: Run the Backend API Server
-In terminal 1:
-```bash
+``` cmd
 python run_backend.py
 ```
-*The API will start at:* **`http://localhost:8000`**
-*Interactive Swagger API Docs:* **`http://localhost:8000/docs`**
 
----
+During setup, the backend started with Uvicorn on port `8000`. Open the
+API documentation:
 
-### Step 5: Run the Frontend User Interface
-In terminal 2:
-```bash
+http://127.0.0.1:8000/docs
+
+Keep this terminal window open.
+
+### 5. Start the frontend
+
+Open a second terminal window:
+
+``` cmd
 cd frontend
 npm run dev
 ```
-*The React Dashboard will be available at:* **`http://localhost:5173`**
 
----
+Open the local address printed by Vite in the terminal (commonly
+`http://localhost:5173/`).
 
-## 6. Command-Line Interface (CLI) for Data Engineers
+Keep both backend and frontend terminals running.
 
-A CLI utility (`run_pipeline_cli.py`) is provided for automated headless execution:
+## Run the ETL Pipeline
 
-| Command | Description |
-| :--- | :--- |
-| `python run_pipeline_cli.py --action status` | Displays current warehouse row counts, CDC queue, and savings % |
-| `python run_pipeline_cli.py --action incremental` | Executes CDC-based Incremental ETL on pending delta events |
-| `python run_pipeline_cli.py --action full` | Executes complete Full Load ETL across all historical tables |
-| `python run_pipeline_cli.py --action benchmark --delta 40` | Runs automated benchmark comparing Full vs Incremental ETL |
-| `python run_pipeline_cli.py --action simulate` | Injects synthetic live customer KYC changes and deposits |
-| `python run_pipeline_cli.py --action seed` | Initializes sample customers, accounts, branches, and facts |
+The repository contains a root-level `run_pipeline.py` script. From the
+project root, with the virtual environment activated, run:
 
----
+``` cmd
+python run_pipeline.py
+```
 
-## 7. Empirical Optimization & Benchmarking Results
+Check the terminal output and the project code for the script's exact
+input requirements and behavior.
 
-Benchmark tests run across the same operational database snapshot yielded the following metrics:
+## Security and Data Privacy
 
-| Metric | Full Load ETL | CDC Incremental ETL | Optimization Gain |
-| :--- | :--- | :--- | :--- |
-| **Algorithmic Complexity** | $\mathcal{O}(N)$ (Entire historical corpus) | $\mathcal{O}(\Delta)$ (Changed delta only) | **Scale Invariance** |
-| **Execution Latency** | **$3,108.03\text{ ms}$** | **$60.36\text{ ms}$** | **$98.06\%$ Time Saved** |
-| **Speedup Factor** | $1.0\times$ (Baseline) | **$51.49\times$ faster** | **$51.5\times$ Speedup** |
-| **Records Processed** | $7,491$ rows | $27$ delta rows | **$99.64\%$ I/O Reduction** |
-| **Throughput** | Baseline | $447.35\text{ records/sec}$ | **High Delta Throughput** |
-| **Database Locks** | Shared Table Read Locks | None (Changelog stream) | **Zero OLTP Disruption** |
+-   Use synthetic or anonymized data for demonstrations.
+-   Never commit `.env` files, passwords, API keys, database
+    credentials, or private customer information.
+-   Check `.gitignore` before every push.
+-   Do not expose real banking account numbers, personal identifiers, or
+    transaction records in screenshots or reports.
 
----
+## Performance Evaluation
 
-## 8. Database Compatibility & PostgreSQL Setup
+For a meaningful full-ETL versus incremental-ETL comparison, record
+actual measurements such as:
 
-The project runs out-of-the-box using an optimized embedded SQLite database with **Write-Ahead Logging (WAL)** and foreign keys enabled.
+-   Number of source records scanned
+-   Number of inserted, updated, and deleted records detected
+-   Number of records loaded
+-   Pipeline execution time
+-   Throughput (records processed per second)
 
-To connect directly to an enterprise **PostgreSQL** instance:
-1. Update `DATABASE_URL` in `.env`:
-   ```ini
-   DATABASE_URL=postgresql://postgres:password@localhost:5432/banking_dw
-   ```
-2. Execute the provided PostgreSQL DDL script:
-   ```bash
-   psql -U postgres -d banking_dw -f database/schema_postgres.sql
-   ```
-3. Enable trigger-based or logical replication CDC using `database/postgres_cdc_setup.sql`.
+Report only results measured from your own runs. Do not invent
+performance percentages.
 
----
+## Future Enhancements
 
-## 9. Academic Viva & Presentation Defense
+Potential extensions, if not already implemented:
 
-Comprehensive viva preparation materials are available in the **Architecture & Viva Prep** tab inside the web UI, as well as in `docs/VIVA_PRESENTATION_GUIDE.md`:
-- **Opening Elevator Pitch:** 2-minute project summary.
-- **Live Demo Script:** Step-by-step guidance for demonstrating source ingestion, CDC stream inspection, benchmark comparison, and Star Schema exploration.
-- **Top 12 Viva Voce Questions:** Detailed explanations of Kimball modeling, SCD Type 2 mechanics, SHA-256 idempotency, and statistical anomaly detection.
+-   Additional CSV, JSON, Excel, and relational database connectors
+-   Log-based CDC and automated change-stream processing
+-   Workflow scheduling with Apache Airflow
+-   Data quality checks and retry handling
+-   Role-based access control and audit logging
+-   Advanced customer analytics and anomaly detection
 
----
+## Author
 
-## 10. License & Author
-Developed as an industry-level Major Academic Project in Data Engineering, Data Warehousing, and Pipeline Optimization. All customer and transaction records are synthetically generated for privacy compliance.
+**Yadala Akash**
