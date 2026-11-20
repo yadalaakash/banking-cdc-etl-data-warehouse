@@ -23,8 +23,8 @@ This major project develops, implements, and benchmarks a production-grade **Cha
 
 ## 2. Problem Statement
 
-Financial institutions face three major challenges in transactional data warehousing:
-1. **Unbounded Batch Windows:** In a Full Load architecture, extraction time scales with historical volume $\mathcal{O}(N)$. As transactional history grows into millions of records, nightly ETL jobs cannot complete within scheduled maintenance intervals.
+Financial institutions face four major challenges in transactional data warehousing:
+1. **Unbounded Batch Windows:** In a Full Load architecture, extraction time scales linearly with historical volume $\mathcal{O}(N)$. As transactional history grows into millions of records, nightly ETL jobs cannot complete within scheduled maintenance intervals.
 2. **Transactional Lock Contention:** Full table scans place shared read locks on active OLTP database tables, degrading latency for user-facing online banking operations and debit/credit authorization.
 3. **Information Latency:** Fraud detection, liquidity monitoring, and compliance auditing operate on stale data from the previous night rather than real-time transactional streams.
 4. **Historical Attribute Overwrite:** Traditional systems frequently perform in-place updates, destroying the temporal history of customer credit scores, addresses, and KYC classifications required for financial compliance.
