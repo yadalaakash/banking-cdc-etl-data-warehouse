@@ -11,7 +11,7 @@ import {
   RefreshCw,
   Layers
 } from 'lucide-react';
-import { fetchSources, uploadSourceFile, generateSampleFiles } from '../services/api';
+import { fetchSources, uploadSourceFile, generateSampleFiles, getSampleDownloadUrl } from '../services/api';
 
 export default function DataSourcesView({ onRefreshAll }) {
   const [sourcesData, setSourcesData] = useState(null);
@@ -70,7 +70,7 @@ export default function DataSourcesView({ onRefreshAll }) {
   };
 
   const handleDownloadSample = async (filename) => {
-    window.open(`http://localhost:8000/api/sources/download-sample/${filename}`, '_blank');
+    window.open(getSampleDownloadUrl(filename), '_blank');
   };
 
   return (

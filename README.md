@@ -9,7 +9,16 @@
 [![PostgreSQL Ready](https://img.shields.io/badge/PostgreSQL-Ready-336791.svg)](https://www.postgresql.org/)
 [![Kimball Star Schema](https://img.shields.io/badge/Data%20Warehouse-Kimball%20Star%20Schema-purple.svg)]()
 [![CDC Engine](https://img.shields.io/badge/CDC-Idempotent%20SHA256-orange.svg)]()
+[![Backend API](https://img.shields.io/badge/Backend%20API-Online-009688?style=flat&logo=fastapi)](https://banking-cdc-etl-data-warehouse.onrender.com)
+[![Swagger Docs](https://img.shields.io/badge/Swagger%20Docs-Interactive%20API-0284c7?style=flat&logo=swagger)](https://banking-cdc-etl-data-warehouse.onrender.com/docs)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Web%20Dashboard-4f46e5?style=flat&logo=render)](https://banking-cdc-etl-data-warehouse-ui.onrender.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+> 🌐 **Live Cloud Deployment:**
+> - **Live Web Dashboard:** [https://banking-cdc-etl-data-warehouse-ui.onrender.com](https://banking-cdc-etl-data-warehouse-ui.onrender.com)
+> - **Live Backend REST API:** [https://banking-cdc-etl-data-warehouse.onrender.com](https://banking-cdc-etl-data-warehouse.onrender.com)
+> - **Interactive Swagger Docs:** [https://banking-cdc-etl-data-warehouse.onrender.com/docs](https://banking-cdc-etl-data-warehouse.onrender.com/docs)
+> - **API Health Check:** [https://banking-cdc-etl-data-warehouse.onrender.com/health](https://banking-cdc-etl-data-warehouse.onrender.com/health)
 
 ---
 
@@ -381,7 +390,51 @@ python run_pipeline_cli.py --action simulate
 
 ---
 
-## 12. Screenshots & UI Walkthrough
+## 12. Cloud Deployment Guide (Render)
+
+This repository includes a native [**Render Blueprint** (`render.yaml`)](render.yaml) for automated deployment on [Render](https://render.com).
+
+### Option A: Automatic Blueprint Deployment (Recommended)
+1. Go to [Render Dashboard](https://dashboard.render.com/) and click **New +** -> **Blueprint**.
+2. Connect this repository: `https://github.com/yadalaakash/banking-cdc-etl-data-warehouse`.
+3. Render will detect `render.yaml` and automatically configure both:
+   - **Backend Web Service:** `banking-cdc-etl-data-warehouse`
+   - **Frontend Static Site:** `banking-cdc-etl-data-warehouse-ui`
+4. Click **Apply** to deploy both services automatically.
+
+### Option B: Manual Service Configuration
+
+#### 1. Backend Web Service (FastAPI)
+- **Service Type:** Web Service
+- **Name:** `banking-cdc-etl-data-warehouse`
+- **Runtime:** `Python 3`
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
+- **Environment Variables:**
+  - `PYTHON_VERSION`: `3.13.0`
+  - `ENVIRONMENT`: `production`
+  - `ENABLE_ANOMALY_DETECTION`: `true`
+  - `SCD_MODE`: `scd_type_2`
+- **Deployed Backend URL:** `https://banking-cdc-etl-data-warehouse.onrender.com`
+
+#### 2. Frontend Static Site (React / Vite)
+- **Service Type:** Static Site
+- **Name:** `banking-cdc-etl-data-warehouse-ui`
+- **Branch:** `main`
+- **Root Directory:** `frontend`
+- **Build Command:** `npm install && npm run build`
+- **Publish Directory:** `dist`
+- **Environment Variables:**
+  - `VITE_API_BASE_URL`: `https://banking-cdc-etl-data-warehouse.onrender.com`
+- **Redirects / Rewrites:**
+  - **Type:** `Rewrite`
+  - **Source:** `/*`
+  - **Destination:** `/index.html`
+- **Deployed Frontend URL:** `https://banking-cdc-etl-data-warehouse-ui.onrender.com`
+
+---
+
+## 13. Screenshots & UI Walkthrough
 
 | Module | Interface Preview Description |
 | :--- | :--- |
@@ -395,7 +448,7 @@ python run_pipeline_cli.py --action simulate
 
 ---
 
-## 13. Empirical Optimization Results
+## 14. Empirical Optimization Results
 
 Direct measurements recorded from automated benchmark executions:
 
@@ -411,7 +464,7 @@ Direct measurements recorded from automated benchmark executions:
 
 ---
 
-## 14. Future Enhancements
+## 15. Future Enhancements
 
 1. **Distributed CDC via Apache Kafka & Debezium:** Scale the ingestion layer by integrating Debezium connectors for distributed log-based CDC streaming through Apache Kafka topics.
 2. **Cloud Data Warehouse Migration:** Extend SQLAlchemy target loaders to Snowflake, Google BigQuery, and Amazon Redshift using DBT (Data Build Tool) transformations.
@@ -420,7 +473,7 @@ Direct measurements recorded from automated benchmark executions:
 
 ---
 
-## 15. Repository & Project Metadata
+## 16. Repository & Project Metadata
 
 - **Repository:** [https://github.com/yadalaakash/banking-cdc-etl-data-warehouse](https://github.com/yadalaakash/banking-cdc-etl-data-warehouse)
 - **Author:** Yadala Akash

@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,14 +42,27 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS configuration supporting deployed frontend, Render domains, and local development
+cors_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if cors_origins_env and cors_origins_env != "*":
+    allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_origin_regex=r"https://.*\.onrender\.com",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_origin_regex=r"https://.*\.onrender\.com",
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Register API Routers
 app.include_router(dashboard_router)
@@ -58,6 +72,24 @@ app.include_router(pipeline_router)
 app.include_router(warehouse_router)
 app.include_router(analytics_router)
 app.include_router(reports_router)
+
+@app.get("/")
+def root():
+    return {
+        "status": "ONLINE",
+        "service": "Banking Customer Transaction Data Warehouse CDC-ETL Engine",
+        "version": "2.0.0",
+        "documentation": "/docs",
+        "health": "/health",
+        "endpoints": {
+            "dashboard_stats": "/api/dashboard/stats",
+            "dashboard_charts": "/api/dashboard/charts",
+            "cdc_events": "/api/cdc/events",
+            "pipeline_runs": "/api/pipeline/runs",
+            "warehouse_tables": "/api/warehouse/tables",
+            "analytics_segmentation": "/api/analytics/segmentation"
+        }
+    }
 
 @app.get("/health")
 def health_check():

@@ -1,4 +1,16 @@
-const API_BASE = "http://localhost:8000/api";
+// Configurable API Base URL:
+// 1. Evaluates import.meta.env.VITE_API_BASE_URL (configured in Render Static Site environment variables)
+// 2. In production builds, falls back to the deployed backend URL: https://banking-cdc-etl-data-warehouse.onrender.com
+// 3. In local development, falls back to http://localhost:8000
+const RAW_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD
+    ? "https://banking-cdc-etl-data-warehouse.onrender.com"
+    : "http://localhost:8000");
+
+// Normalize: remove trailing slashes and ensure /api path
+const cleanBase = RAW_BASE_URL.replace(/\/+$/, "");
+const API_BASE = cleanBase.endsWith("/api") ? cleanBase : `${cleanBase}/api`;
 
 export async function fetchStats() {
   const res = await fetch(`${API_BASE}/dashboard/stats`);
@@ -34,6 +46,10 @@ export async function generateSampleFiles() {
   const res = await fetch(`${API_BASE}/sources/generate-sample-files`);
   if (!res.ok) throw new Error("Failed to generate sample files");
   return res.json();
+}
+
+export function getSampleDownloadUrl(filename) {
+  return `${API_BASE}/sources/download-sample/${encodeURIComponent(filename)}`;
 }
 
 export async function fetchCDCEvents(page = 1, limit = 25, operation = "", tableName = "", isProcessed = null) {
